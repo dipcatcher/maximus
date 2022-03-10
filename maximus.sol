@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -11,6 +11,16 @@ import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 /// @title HEX Contract Proxy
 /// @author Tanto Nomini
 /// @dev HEX Contract Proxy
+
+contract HedronToken {
+  
+  function approve(address spender, uint256 amount) external returns (bool) {}
+  function transfer(address recipient, uint256 amount) external returns (bool) {}
+  
+  function mintNative(uint256 stakeIndex, uint40 stakeId) external returns (uint256) {}
+ 
+}
+
 contract HEXToken {
   function currentDay() external view returns (uint256){}
   function stakeStart(uint256 newStakedHearts, uint256 newStakedDays) external {}
@@ -28,6 +38,8 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     uint256 STAKE_START_DAY;
     uint256 STAKE_END_DAY;
     uint256 REDEMPTION_RATE; 
+    uint256 HEDRON_REDEMPTION_RATE;
+    bool HAS_HEDRON_MINTED;
     uint256 STAKE_LENGTH;
     uint256 STAKE_ID;
     
@@ -37,8 +49,10 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         MINTING_PHASE_END = start_day+duration;
         HAS_STAKE_STARTED=false;
         HAS_STAKE_ENDED = false;
+        HAS_HEDRON_MINTED=false;
         REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
-        STAKE_LENGTH=1; //5555;
+        HEDRON_REDEMPTION_RATE=100000000;
+        STAKE_LENGTH=5; //change to 5555 on prod;
     }
     
     /**
@@ -50,8 +64,19 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
 	}
     address CONTRACT_ADDRESS =address(this);
     address HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39; // "2b, 5 9 1e? that is the question..."
+    /*
+    HDRN Token Contract Addresses:
+
+    Pulse Testnet V2
+    0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD
+
+    Ethereum
+    0x3819f64f282bf135d62168C1e513280dAF905e06
+    */
+    address HEDRON_ADDRESS=0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD;
     IERC20 hex_contract = IERC20(HEX_ADDRESS);
     HEXToken token = HEXToken(HEX_ADDRESS);
+    HedronToken hedron_token = HedronToken(HEDRON_ADDRESS);
     // public function
     /**
     * @dev Returns the HEX Day that the Minting Phase started.
@@ -122,8 +147,17 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         require(yourMAXI>=amount_MAXI, "You do not have that much MAXI.");
         uint256 raw_redeemable_amount = amount_MAXI*REDEMPTION_RATE;
         uint256 redeemable_amount = raw_redeemable_amount/100000000;
+        uint256 raw_redeemable_hedron = amount_MAXI*HEDRON_REDEMPTION_RATE;
+        uint256 redeemable_hedron = raw_redeemable_hedron/100000000;
+
+
         burn(amount_MAXI);
         token.transfer(msg.sender, redeemable_amount);
+        if (HAS_HEDRON_MINTED==true) {
+            hedron_token.transfer(msg.sender, redeemable_hedron);
+
+        }
+        
     }
     //Staking Functions
     // Anyone may run these functions during the allowed time, so long as they pay the gas.
@@ -178,12 +212,28 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
      * @param precision number of decimals to cut off at.
      * @return quotient 
      */
-    function percent(uint numerator, uint denominator, uint precision) private view returns(uint quotient) {
+    function percent(uint numerator, uint denominator, uint precision) public view returns(uint quotient) {
         // helper for calculating percent
          // caution, check safe-to-multiply here
         uint _numerator  = numerator * 10 ** (precision+1);
         // with rounding of last digit
         uint _quotient =  ((_numerator / denominator) + 5) / 10;
         return ( _quotient);
+
+    
   }
+
+  function mintHedron(uint256 stakeIndex,uint40 stakeId ) public  {
+      require(HEXToken(HEX_ADDRESS).currentDay()>STAKE_END_DAY-2, "Hedron may only be minted in the last two days of the stake.");
+      require(HAS_STAKE_ENDED ==false, "Stake must be ongoing to mint hedron.");
+      _mintHedron(stakeIndex, stakeId);
+      HAS_HEDRON_MINTED=true;
+        
+        }
+  function _mintHedron(uint256 stakeIndex,uint40 stakeId ) private  {
+      
+        uint256 num_hedron = hedron_token.mintNative(stakeIndex, stakeId);
+        uint256 total_maxi = IERC20(address(this)).totalSupply();
+        HEDRON_REDEMPTION_RATE = percent(num_hedron, total_maxi, 8);
+        }
 }

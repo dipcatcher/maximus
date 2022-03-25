@@ -1,4 +1,4 @@
-
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
@@ -18,6 +18,7 @@ contract HedronToken {
   function transfer(address recipient, uint256 amount) external returns (bool) {}
   
   function mintNative(uint256 stakeIndex, uint40 stakeId) external returns (uint256) {}
+  function claimNative(uint256 stakeIndex, uint40 stakeId) external returns (uint256) {}
  
 }
 
@@ -43,16 +44,16 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     uint256 STAKE_LENGTH;
     uint256 STAKE_ID;
     
-    constructor(uint256 start_day, uint256 duration) ERC20("Maximus", "MAXI") {
+    constructor(uint256 start_day, uint256 mint_duration, uint256 stake_duration) ERC20("Maximus hedron test", "MAXI") {
         
         MINTING_PHASE_START = start_day;
-        MINTING_PHASE_END = start_day+duration;
+        MINTING_PHASE_END = start_day+mint_duration;
         HAS_STAKE_STARTED=false;
         HAS_STAKE_ENDED = false;
         HAS_HEDRON_MINTED=false;
         REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
         HEDRON_REDEMPTION_RATE=100000000;
-        STAKE_LENGTH=5; //change to 5555 on prod;
+        STAKE_LENGTH=stake_duration; 
     }
     
     /**
@@ -75,6 +76,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     */
     address HEDRON_ADDRESS=0xDC11f7E700A4c898AE5CAddB1082cFfa76512aDD;
     IERC20 hex_contract = IERC20(HEX_ADDRESS);
+    IERC20 hedron_contract=IERC20(HEDRON_ADDRESS);
     HEXToken token = HEXToken(HEX_ADDRESS);
     HedronToken hedron_token = HedronToken(HEDRON_ADDRESS);
     // public function
@@ -103,6 +105,11 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     * @return Rate at which MAXI may be redeemed for HEX. "Number of HEX hearts per 1 MAXI redeemed."
     */
     function getRedemptionRate() public view returns (uint256) {return REDEMPTION_RATE;}
+    /**
+    * @dev Returns the rate at which MAXI may be redeemed for HEDRON.
+    * @return Rate at which MAXI may be redeemed for HDRN.
+    */
+    function getHedronRedemptionRate() public view returns (uint256) {return HEDRON_REDEMPTION_RATE;}
 
     /**
     * @dev Returns the current HEX day."
@@ -222,18 +229,27 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
 
     
   }
-
-  function mintHedron(uint256 stakeIndex,uint40 stakeId ) public  {
-      require(HEXToken(HEX_ADDRESS).currentDay()>STAKE_END_DAY-2, "Hedron may only be minted in the last two days of the stake.");
-      require(HAS_STAKE_ENDED ==false, "Stake must be ongoing to mint hedron.");
-      _mintHedron(stakeIndex, stakeId);
-      HAS_HEDRON_MINTED=true;
+  function claimHedron(uint256 stakeIndex,uint40 stakeId ) public  {
+      
+      _claimHedron(stakeIndex, stakeId);
+      
+        }
+  function _claimHedron(uint256 stakeIndex,uint40 stakeId ) private  {
+        hedron_token.claimNative(stakeIndex, stakeId);
         
         }
-  function _mintHedron(uint256 stakeIndex,uint40 stakeId ) private  {
+
+  function mintHedron(uint256 stakeIndex,uint40 stakeId ) public  {
       
-        uint256 num_hedron = hedron_token.mintNative(stakeIndex, stakeId);
-        uint256 total_maxi = IERC20(address(this)).totalSupply();
-        HEDRON_REDEMPTION_RATE = percent(num_hedron, total_maxi, 8);
+      _mintHedron(stakeIndex, stakeId);
+      
         }
+  function _mintHedron(uint256 stakeIndex,uint40 stakeId ) private  {
+        hedron_token.mintNative(stakeIndex, stakeId);
+        uint256 total_hedron= hedron_contract.balanceOf(address(this));
+        uint256 total_maxi = IERC20(address(this)).totalSupply();
+        HEDRON_REDEMPTION_RATE = percent(total_hedron, total_maxi, 8);
+        HAS_HEDRON_MINTED = true;
+        }
+    
 }

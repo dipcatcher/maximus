@@ -23,20 +23,29 @@ contract HEXToken {
   function stakeEnd(uint256 stakeIndex, uint40 stakeIdParam) public {}
   function stakeCount(address stakerAddr) external view returns (uint256) {}
 }
-contract MyToken is ERC20, ERC20Burnable, Ownable {
+// Maximus is a contract for trustlessly pooling a max length hex stake.
+// Anyone may choose to mint 1 MAXI per HEX deposited into the Maximus Contract Address during the minting phase.
+// Anyone may choose to pay for the gas to start and end the stake on behalf of the Maximus Contract.
+// Anyone may choose to pay for the gas to mint Hedron the stake earns on behalf of the Maximus Contract.
+// MAXI is a standard ERC20 token only minted upon HEX deposit and burnt open HEX redemption with no pre-mine or contract fee.
+// MAXI holders may choose to burn MAXI to redeem HEX principal and yield (Including HEDRON) pro-rata from the Maximus Contract Address during the redemption phase.
+//
+// |---30 Day Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
+
+
+contract Maximus is ERC20, ERC20Burnable, Ownable {
     // all days are measured in terms of the HEX contract day number
     uint256 MINTING_PHASE_START;
     uint256 MINTING_PHASE_END;
     uint256 STAKE_START_DAY;
     uint256 STAKE_END_DAY;
-    uint256 REDEMPTION_RATE; 
-    uint256 HEDRON_REDEMPTION_RATE;
+    uint256 STAKE_LENGTH;
+    uint256 REDEMPTION_RATE; // Number of HEX units redeemable per MAXI
+    uint256 HEDRON_REDEMPTION_RATE; // Number of HEDRON units redeemable per MAXI
     bool HAS_STAKE_STARTED;
     bool HAS_STAKE_ENDED;
     bool HAS_HEDRON_MINTED;
-    uint256 STAKE_LENGTH;
-    uint256 STAKE_ID;
-    address END_STAKER;
+    address END_STAKER; 
     
     constructor(uint256 mint_duration, uint256 stake_duration) ERC20("Maximus", "MAXI") {
         uint256 start_day=hex_token.currentDay();
@@ -113,8 +122,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
 
      /**
     * @dev Returns the address of the person who ends stake. May be used by external gas pooling contracts. If stake has not been ended yet will return 0x000...000"
-    * 
-    * @return end_staker_address
+    * @return end_staker_address This person should be honored and celebrated as a hero.
     */
     function getEndStaker() public view returns (address end_staker_address) {return END_STAKER;}
 
@@ -152,7 +160,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         mint(amount);
     }
      /**
-     * @dev Ensures that it is currently a redemption period and that the user has at least the number of maxi they entered. Then it calculates how much hex may be redeemed, burns the MAXI, and transfers them the hex..
+     * @dev Ensures that it is currently a redemption period (before stake starts or after stake ends) and that the user has at least the number of maxi they entered. Then it calculates how much hex may be redeemed, burns the MAXI, and transfers them the hex.
      * @param amount_MAXI number of MAXI that the user is redeeming, measured in mini
      */
     function redeemHEX(uint256 amount_MAXI) public {
@@ -175,12 +183,14 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
 
     /**
      * @dev Ensures that the stake has not started yet and that the minting phase is over. Then it stakes all the hex in the contract and schedules the STAKE_END_DAY.
+     * @notice This will trigger the start of the HEX stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
+     
      */
     function stakeHEX() public {
         require(HAS_STAKE_STARTED==false, "Stake has already been started.");
         uint256 current_day = hex_token.currentDay();
         require(current_day>MINTING_PHASE_END, "Minting Phase is still ongoing - see MINTING_PHASE_END day.");
-        uint256 amount = hex_contract.balanceOf(address(this)); //contract stakes all hex in the contract. even hex acccidentally sent to the contract without minting.
+        uint256 amount = hex_contract.balanceOf(address(this)); 
         _stakeHEX(amount);
         HAS_STAKE_STARTED=true;
         STAKE_START_DAY=current_day;
@@ -195,6 +205,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         }
     /**
      * @dev Ensures that the stake is fully complete and that it has not already been ended. Then it ends the hex stake and updates the redemption rate.
+     * @notice This will trigger the ending of the HEX stake and calculate the new redemption rate. This may be very expensive. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeIdParam stake identifier found in stakeLists[contract_address] in hex contract.
      */
@@ -218,6 +229,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     }
     /**
      * @dev Public function which calls the private function which is used for minting available HDRN accumulated by the contract stake. 
+     * @notice This will trigger the minting of the mintable Hedron earned by the stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeId stake identifier found in stakeLists[contract_address] in hex contract.
      */

@@ -36,6 +36,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     bool HAS_HEDRON_MINTED;
     uint256 STAKE_LENGTH;
     uint256 STAKE_ID;
+    address END_STAKER;
     
     constructor(uint256 mint_duration, uint256 stake_duration) ERC20("Maximus", "MAXI") {
         uint256 start_day=hex_token.currentDay();
@@ -53,7 +54,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     /**
     * @dev View number of decimal places the MAXI token is divisible to. Manually overwritten from default 18 to 8 to match that of HEX. 1 MAXI = 10^8 mini
     */
-    function decimals() public view override returns (uint8) {
+    function decimals() public view virtual override returns (uint8) {
         return 8;
 	}
     address MAXI_ADDRESS =address(this);
@@ -109,6 +110,13 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
     * @return day Current HEDRON Day
     */
     function getHedronDay() public view returns (uint day) {return hedron_token.currentDay();}
+
+     /**
+    * @dev Returns the address of the person who ends stake. May be used by external gas pooling contracts. If stake has not been ended yet will return 0x000...000"
+    * 
+    * @return end_staker_address
+    */
+    function getEndStaker() public view returns (address end_staker_address) {return END_STAKER;}
 
     /**
      * @dev Used to calculate a ratio considering decimal rounding.
@@ -196,6 +204,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         _endStakeHEX(stakeIndex, stakeIdParam);
         HAS_STAKE_ENDED=true;
         REDEMPTION_RATE = get_redemption_rate();
+        END_STAKER=msg.sender;
     }
     /**
      * @dev Calculates the redemption rate, the number of HEX in the contract after stake end divided by the total number of MAXI.
@@ -227,4 +236,7 @@ contract MyToken is ERC20, ERC20Burnable, Ownable {
         HEDRON_REDEMPTION_RATE = percent(total_hedron, total_maxi, 8);
         HAS_HEDRON_MINTED = true;
         }
+
+  
 }
+

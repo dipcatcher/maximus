@@ -1,7 +1,6 @@
-// SPDX-License-Identifier: MIT
+//SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.2;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -23,7 +22,7 @@ contract HEXToken {
   function stakeEnd(uint256 stakeIndex, uint40 stakeIdParam) public {}
   function stakeCount(address stakerAddr) external view returns (uint256) {}
 }
-// Maximus is a contract for trustlessly pooling a max length hex stake.
+// Maximus is a contract for trustlessly pooling a single max length hex stake.
 // Anyone may choose to mint 1 MAXI per HEX deposited into the Maximus Contract Address during the minting phase.
 // Anyone may choose to pay for the gas to start and end the stake on behalf of the Maximus Contract.
 // Anyone may choose to pay for the gas to mint Hedron the stake earns on behalf of the Maximus Contract.
@@ -33,7 +32,7 @@ contract HEXToken {
 // |---30 Day Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
 
 
-contract Maximus is ERC20, ERC20Burnable, Ownable {
+contract Maximus is ERC20, ERC20Burnable {
     // all days are measured in terms of the HEX contract day number
     uint256 MINTING_PHASE_START;
     uint256 MINTING_PHASE_END;
@@ -57,18 +56,19 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
         HAS_HEDRON_MINTED=false;
         REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
         HEDRON_REDEMPTION_RATE=0; //no hedron is redeemable until minting has occurred
-        renounceOwnership();
+        
     }
     
     /**
     * @dev View number of decimal places the MAXI token is divisible to. Manually overwritten from default 18 to 8 to match that of HEX. 1 MAXI = 10^8 mini
     */
+    
     function decimals() public view virtual override returns (uint8) {
         return 8;
 	}
     address MAXI_ADDRESS =address(this);
-    address HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39; // "2b, 5 9 1e? that is the question..."
-    address HEDRON_ADDRESS=0x3819f64f282bf135d62168C1e513280dAF905e06; // PULSECHAIN TESTNET HEDRON ADDRESS
+    address constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39; // "2b, 5 9 1e? that is the question..."
+    address constant HEDRON_ADDRESS=0x3819f64f282bf135d62168C1e513280dAF905e06; // PULSECHAIN TESTNET HEDRON ADDRESS
 
     IERC20 hex_contract = IERC20(HEX_ADDRESS);
     IERC20 hedron_contract=IERC20(HEDRON_ADDRESS);
@@ -79,38 +79,38 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
     * @dev Returns the HEX Day that the Minting Phase started.
     * @return HEX Day that the Minting Phase started.
     */
-    function getMintingPhaseStartDay() public view returns (uint256) {return MINTING_PHASE_START;}
+    function getMintingPhaseStartDay() external view returns (uint256) {return MINTING_PHASE_START;}
     /**
     * @dev Returns the HEX Day that the Minting Phase ends.
     * @return HEX Day that the Minting Phase ends.
     */
-    function getMintingPhaseEndDay() public view returns (uint256) {return MINTING_PHASE_END;}
+    function getMintingPhaseEndDay() external view returns (uint256) {return MINTING_PHASE_END;}
     /**
     * @dev Returns the HEX Day that the Maximus HEX Stake started.
     * @return HEX Day that the Maximus HEX Stake started.
     */
-    function getStakeStartDay() public view returns (uint256) {return STAKE_START_DAY;}
+    function getStakeStartDay() external view returns (uint256) {return STAKE_START_DAY;}
     /**
     * @dev Returns the HEX Day that the Maximus HEX Stake ends.
     * @return HEX Day that the Maximus HEX Stake ends.
     */
-    function getStakeEndDay() public view returns (uint256) {return STAKE_END_DAY;}
+    function getStakeEndDay() external view returns (uint256) {return STAKE_END_DAY;}
     /**
     * @dev Returns the rate at which MAXI may be redeemed for HEX. "Number of HEX hearts per 1 MAXI redeemed."
     * @return Rate at which MAXI may be redeemed for HEX. "Number of HEX hearts per 1 MAXI redeemed."
     */
-    function getRedemptionRate() public view returns (uint256) {return REDEMPTION_RATE;}
+    function getRedemptionRate() external view returns (uint256) {return REDEMPTION_RATE;}
     /**
     * @dev Returns the rate at which MAXI may be redeemed for HEDRON.
     * @return Rate at which MAXI may be redeemed for HDRN.
     */
-    function getHedronRedemptionRate() public view returns (uint256) {return HEDRON_REDEMPTION_RATE;}
+    function getHedronRedemptionRate() external view returns (uint256) {return HEDRON_REDEMPTION_RATE;}
 
     /**
     * @dev Returns the current HEX day."
     * @return Current HEX Day
     */
-    function getHexDay() public view returns (uint256){
+    function getHexDay() external view returns (uint256){
         uint256 day = hex_token.currentDay();
         return day;
     }
@@ -118,13 +118,13 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
     * @dev Returns the current HEDRON day."
     * @return day Current HEDRON Day
     */
-    function getHedronDay() public view returns (uint day) {return hedron_token.currentDay();}
+    function getHedronDay() external view returns (uint day) {return hedron_token.currentDay();}
 
      /**
     * @dev Returns the address of the person who ends stake. May be used by external gas pooling contracts. If stake has not been ended yet will return 0x000...000"
     * @return end_staker_address This person should be honored and celebrated as a hero.
     */
-    function getEndStaker() public view returns (address end_staker_address) {return END_STAKER;}
+    function getEndStaker() external view returns (address end_staker_address) {return END_STAKER;}
 
     /**
      * @dev Used to calculate a ratio considering decimal rounding.
@@ -152,7 +152,7 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
      * @dev Ensures that MAXI Minting Phase is ongoing and that the user has allowed the Maximus Contract address to spend the amount of HEX the user intends to pledge to Maximus DAO. Then sends the designated HEX from the user to the Maximus Contract address and mints 1 MAXI per HEX pledged.
      * @param amount of HEX user chose to pledge, measured in hearts
      */
-    function pledgeHEX(uint256 amount) public {
+    function pledgeHEX(uint256 amount) external {
         require(hex_token.currentDay()<=MINTING_PHASE_END, "Minting Phase is Done");
         require(hex_contract.allowance(msg.sender, MAXI_ADDRESS)>=amount, "Please approve contract address as allowed spender in the hex contract.");
         address from = msg.sender;
@@ -163,7 +163,7 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
      * @dev Ensures that it is currently a redemption period (before stake starts or after stake ends) and that the user has at least the number of maxi they entered. Then it calculates how much hex may be redeemed, burns the MAXI, and transfers them the hex.
      * @param amount_MAXI number of MAXI that the user is redeeming, measured in mini
      */
-    function redeemHEX(uint256 amount_MAXI) public {
+    function redeemHEX(uint256 amount_MAXI) external {
         require(HAS_STAKE_STARTED==false || HAS_STAKE_ENDED==true , "Redemption can only happen before stake starts or after stake ends.");
         uint256 yourMAXI = balanceOf(msg.sender);
         require(yourMAXI>=amount_MAXI, "You do not have that much MAXI.");
@@ -186,7 +186,7 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
      * @notice This will trigger the start of the HEX stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
      
      */
-    function stakeHEX() public {
+    function stakeHEX() external {
         require(HAS_STAKE_STARTED==false, "Stake has already been started.");
         uint256 current_day = hex_token.currentDay();
         require(current_day>MINTING_PHASE_END, "Minting Phase is still ongoing - see MINTING_PHASE_END day.");
@@ -209,7 +209,7 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeIdParam stake identifier found in stakeLists[contract_address] in hex contract.
      */
-    function endStakeHEX(uint256 stakeIndex,uint40 stakeIdParam ) public {
+    function endStakeHEX(uint256 stakeIndex,uint40 stakeIdParam ) external {
         require(hex_token.currentDay()>STAKE_END_DAY, "Stake is not complete yet.");
         require(HAS_STAKE_STARTED==true && HAS_STAKE_ENDED==false, "Stake has already been started.");
         _endStakeHEX(stakeIndex, stakeIdParam);
@@ -233,7 +233,7 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeId stake identifier found in stakeLists[contract_address] in hex contract.
      */
-  function mintHedron(uint256 stakeIndex,uint40 stakeId ) public  {
+  function mintHedron(uint256 stakeIndex,uint40 stakeId ) external  {
       _mintHedron(stakeIndex, stakeId);
         }
    /**
@@ -251,4 +251,3 @@ contract Maximus is ERC20, ERC20Burnable, Ownable {
 
   
 }
-

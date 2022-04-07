@@ -29,7 +29,7 @@ contract HEXToken {
 // MAXI is a standard ERC20 token only minted upon HEX deposit and burnt open HEX redemption with no pre-mine or contract fee.
 // MAXI holders may choose to burn MAXI to redeem HEX principal and yield (Including HEDRON) pro-rata from the Maximus Contract Address during the redemption phase.
 //
-// |---30 Day Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
+// |--- Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
 
 
 contract Maximus is ERC20, ERC20Burnable {
@@ -39,7 +39,7 @@ contract Maximus is ERC20, ERC20Burnable {
     uint256 STAKE_START_DAY;
     uint256 STAKE_END_DAY;
     uint256 STAKE_LENGTH;
-    uint256 REDEMPTION_RATE; // Number of HEX units redeemable per MAXI
+    uint256 HEX_REDEMPTION_RATE; // Number of HEX units redeemable per MAXI
     uint256 HEDRON_REDEMPTION_RATE; // Number of HEDRON units redeemable per MAXI
     bool HAS_STAKE_STARTED;
     bool HAS_STAKE_ENDED;
@@ -54,7 +54,7 @@ contract Maximus is ERC20, ERC20Burnable {
         HAS_STAKE_STARTED=false;
         HAS_STAKE_ENDED = false;
         HAS_HEDRON_MINTED=false;
-        REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
+        HEX_REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
         HEDRON_REDEMPTION_RATE=0; //no hedron is redeemable until minting has occurred
         
     }
@@ -99,7 +99,7 @@ contract Maximus is ERC20, ERC20Burnable {
     * @dev Returns the rate at which MAXI may be redeemed for HEX. "Number of HEX hearts per 1 MAXI redeemed."
     * @return Rate at which MAXI may be redeemed for HEX. "Number of HEX hearts per 1 MAXI redeemed."
     */
-    function getRedemptionRate() external view returns (uint256) {return REDEMPTION_RATE;}
+    function getHEXRedemptionRate() external view returns (uint256) {return HEX_REDEMPTION_RATE;}
     /**
     * @dev Returns the rate at which MAXI may be redeemed for HEDRON.
     * @return Rate at which MAXI may be redeemed for HDRN.
@@ -125,20 +125,6 @@ contract Maximus is ERC20, ERC20Burnable {
     * @return end_staker_address This person should be honored and celebrated as a hero.
     */
     function getEndStaker() external view returns (address end_staker_address) {return END_STAKER;}
-
-    /**
-     * @dev Used to calculate a ratio considering decimal rounding.
-     * @param numerator HEX balance of contract address after stake ends
-     * @param denominator Total MAXI supply
-     * @param precision number of decimals to cut off at.
-     * @return quotient 
-     */
-    function percent(uint numerator, uint denominator, uint precision) private view returns(uint quotient) {
-        uint _numerator  = numerator * 10 ** (precision+1);
-        //rounding of last digit
-        uint _quotient =  ((_numerator / denominator) + 5) / 10;
-        return ( _quotient);
-  }
 
     // MAXI Issuance and Redemption Functions
     /**
@@ -167,13 +153,13 @@ contract Maximus is ERC20, ERC20Burnable {
         require(HAS_STAKE_STARTED==false || HAS_STAKE_ENDED==true , "Redemption can only happen before stake starts or after stake ends.");
         uint256 yourMAXI = balanceOf(msg.sender);
         require(yourMAXI>=amount_MAXI, "You do not have that much MAXI.");
-        uint256 raw_redeemable_amount = amount_MAXI*REDEMPTION_RATE;
-        uint256 redeemable_amount = raw_redeemable_amount/100000000;
+        uint256 raw_redeemable_amount = amount_MAXI*HEX_REDEMPTION_RATE;
+        uint256 redeemable_amount = raw_redeemable_amount/100000000; //scaled back down to handle integer rounding
         burn(amount_MAXI);
         hex_token.transfer(msg.sender, redeemable_amount);
         if (HAS_HEDRON_MINTED==true) {
             uint256 raw_redeemable_hedron = amount_MAXI*HEDRON_REDEMPTION_RATE;
-            uint256 redeemable_hedron = raw_redeemable_hedron/100000000;
+            uint256 redeemable_hedron = raw_redeemable_hedron/100000000; //scaled back down to handle integer rounding
             hedron_token.transfer(msg.sender, redeemable_hedron);
         }
     }
@@ -214,22 +200,26 @@ contract Maximus is ERC20, ERC20Burnable {
         require(HAS_STAKE_STARTED==true && HAS_STAKE_ENDED==false, "Stake has already been started.");
         _endStakeHEX(stakeIndex, stakeIdParam);
         HAS_STAKE_ENDED=true;
-        REDEMPTION_RATE = get_redemption_rate();
+        uint256 hex_balance = hex_contract.balanceOf(address(this));
+        uint256 total_maxi_supply = IERC20(address(this)).totalSupply();
+        HEX_REDEMPTION_RATE  = calculate_redemption_rate(hex_balance, total_maxi_supply);
         END_STAKER=msg.sender;
     }
     /**
-     * @dev Calculates the redemption rate, the number of HEX in the contract after stake end divided by the total number of MAXI.
-     * @return Redemption Rate "HEX redeemable per MAXI burnt"
+     * @dev Calculates the pro-rata redemption rate of any coin per maxi. Scales value by 10^8 to handle integer rounding.
+     * @param treasury_balance The balance of coins in the maximus contract address (either HEX or HEDRON)
+     * @param maxi_supply total maxi supply
+     * @return redemption_rate Number of units redeemable per 10^8 decimal units of MAXI. Is scaled back down by 10^8 on redemption transaction.
      */
-    function get_redemption_rate() private view returns (uint256){
-        uint256 hex_balance = hex_contract.balanceOf(address(this));
-        uint256 total_maxi = IERC20(address(this)).totalSupply();
-        uint256 RR = percent(hex_balance,total_maxi,8);
-        return RR;
+    function calculate_redemption_rate(uint treasury_balance, uint maxi_supply) private view returns (uint redemption_rate) {
+        uint256 scalar = 10**8;
+        uint256 scaled = (treasury_balance * scalar) / maxi_supply; // scale value to calculate redemption amount per maxi and then divide by same scalar after multiplication
+        return scaled;
     }
+    
     /**
      * @dev Public function which calls the private function which is used for minting available HDRN accumulated by the contract stake. 
-     * @notice This will trigger the minting of the mintable Hedron earned by the stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
+     * @notice This will trigger the minting of the mintable Hedron earned by the stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement. If check to make sure this has not been run yet already or the transaction will fail.
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeId stake identifier found in stakeLists[contract_address] in hex contract.
      */
@@ -245,9 +235,9 @@ contract Maximus is ERC20, ERC20Burnable {
         hedron_token.mintNative(stakeIndex, stakeId);
         uint256 total_hedron= hedron_contract.balanceOf(address(this));
         uint256 total_maxi = IERC20(address(this)).totalSupply();
-        HEDRON_REDEMPTION_RATE = percent(total_hedron, total_maxi, 8);
+        
+        HEDRON_REDEMPTION_RATE = calculate_redemption_rate(total_hedron, total_maxi);
         HAS_HEDRON_MINTED = true;
         }
 
-  
 }

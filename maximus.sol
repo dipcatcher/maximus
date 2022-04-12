@@ -57,6 +57,7 @@ contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
         HEX_REDEMPTION_RATE=100000000; // HEX and MAXI are 1:1 convertible up until the stake is initiated
         HEDRON_REDEMPTION_RATE=0; //no hedron is redeemable until minting has occurred
         
+        
     }
     
     /**
@@ -172,7 +173,7 @@ contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
      * @notice This will trigger the start of the HEX stake. If you run this, you will pay the gas on behalf of the contract and you should not expect reimbursement.
      
      */
-    function stakeHEX() external {
+    function stakeHEX() nonReentrant external {
         require(HAS_STAKE_STARTED==false, "Stake has already been started.");
         uint256 current_day = hex_token.currentDay();
         require(current_day>MINTING_PHASE_END, "Minting Phase is still ongoing - see MINTING_PHASE_END day.");
@@ -195,7 +196,7 @@ contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
      * @param stakeIndex index of stake found in stakeLists[contract_address] in hex contract.
      * @param stakeIdParam stake identifier found in stakeLists[contract_address] in hex contract.
      */
-    function endStakeHEX(uint256 stakeIndex,uint40 stakeIdParam ) external {
+    function endStakeHEX(uint256 stakeIndex,uint40 stakeIdParam ) nonReentrant external {
         require(hex_token.currentDay()>STAKE_END_DAY, "Stake is not complete yet.");
         require(HAS_STAKE_STARTED==true && HAS_STAKE_ENDED==false, "Stake has already been started.");
         _endStakeHEX(stakeIndex, stakeIdParam);

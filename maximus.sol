@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
-
+import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 contract HedronToken {
   function approve(address spender, uint256 amount) external returns (bool) {}
   function transfer(address recipient, uint256 amount) external returns (bool) {}
@@ -32,7 +32,7 @@ contract HEXToken {
 // |--- Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
 
 
-contract Maximus is ERC20, ERC20Burnable {
+contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
     // all days are measured in terms of the HEX contract day number
     uint256 MINTING_PHASE_START;
     uint256 MINTING_PHASE_END;
@@ -46,7 +46,7 @@ contract Maximus is ERC20, ERC20Burnable {
     bool HAS_HEDRON_MINTED;
     address END_STAKER; 
     
-    constructor(uint256 mint_duration, uint256 stake_duration) ERC20("Maximus", "MAXI") {
+    constructor(uint256 mint_duration, uint256 stake_duration) ERC20("Maximus", "MAXI") ReentrancyGuard() {
         uint256 start_day=hex_token.currentDay();
         MINTING_PHASE_START = start_day;
         MINTING_PHASE_END = start_day+mint_duration;
@@ -138,7 +138,7 @@ contract Maximus is ERC20, ERC20Burnable {
      * @dev Ensures that MAXI Minting Phase is ongoing and that the user has allowed the Maximus Contract address to spend the amount of HEX the user intends to pledge to Maximus DAO. Then sends the designated HEX from the user to the Maximus Contract address and mints 1 MAXI per HEX pledged.
      * @param amount of HEX user chose to pledge, measured in hearts
      */
-    function pledgeHEX(uint256 amount) external {
+    function pledgeHEX(uint256 amount) nonReentrant external {
         require(hex_token.currentDay()<=MINTING_PHASE_END, "Minting Phase is Done");
         require(hex_contract.allowance(msg.sender, MAXI_ADDRESS)>=amount, "Please approve contract address as allowed spender in the hex contract.");
         address from = msg.sender;
@@ -149,7 +149,7 @@ contract Maximus is ERC20, ERC20Burnable {
      * @dev Ensures that it is currently a redemption period (before stake starts or after stake ends) and that the user has at least the number of maxi they entered. Then it calculates how much hex may be redeemed, burns the MAXI, and transfers them the hex.
      * @param amount_MAXI number of MAXI that the user is redeeming, measured in mini
      */
-    function redeemHEX(uint256 amount_MAXI) external {
+    function redeemHEX(uint256 amount_MAXI) nonReentrant external {
         require(HAS_STAKE_STARTED==false || HAS_STAKE_ENDED==true , "Redemption can only happen before stake starts or after stake ends.");
         uint256 yourMAXI = balanceOf(msg.sender);
         require(yourMAXI>=amount_MAXI, "You do not have that much MAXI.");

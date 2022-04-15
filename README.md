@@ -10,3 +10,5 @@ ALL RIGHTS RESERVED
 
 You may clone and run your own copy of the dapp front end via
 https://anvil.works/build#clone:2XKDZASWBEKTDLDF=VOCGBJDZ33XOQAOMSTJ6NHE2
+
+dweb:/ipfs/QmX6VVLVgVEmvW5u5QQnfqfxYLKYPDDxin4FarA4ityeD6

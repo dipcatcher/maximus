@@ -22,14 +22,44 @@ contract HEXToken {
   function stakeEnd(uint256 stakeIndex, uint40 stakeIdParam) public {}
   function stakeCount(address stakerAddr) external view returns (uint256) {}
 }
+/*
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+─██████──────────██████────██████████████────████████──████████────██████████────██████──────────██████────██████──██████────██████████████─
+─██░░██████████████░░██────██░░░░░░░░░░██────██░░░░██──██░░░░██────██░░░░░░██────██░░██████████████░░██────██░░██──██░░██────██░░░░░░░░░░██─
+─██░░░░░░░░░░░░░░░░░░██────██░░██████░░██────████░░██──██░░████────████░░████────██░░░░░░░░░░░░░░░░░░██────██░░██──██░░██────██░░██████████─
+─██░░██████░░██████░░██────██░░██──██░░██──────██░░░░██░░░░██────────██░░██──────██░░██████░░██████░░██────██░░██──██░░██────██░░██─────────
+─██░░██──██░░██──██░░██────██░░██████░░██──────████░░░░░░████────────██░░██──────██░░██──██░░██──██░░██────██░░██──██░░██────██░░██████████─
+─██░░██──██░░██──██░░██────██░░░░░░░░░░██────────██░░░░░░██──────────██░░██──────██░░██──██░░██──██░░██────██░░██──██░░██────██░░░░░░░░░░██─
+─██░░██──██████──██░░██────██░░██████░░██──────████░░░░░░████────────██░░██──────██░░██──██████──██░░██────██░░██──██░░██────██████████░░██─
+─██░░██──────────██░░██────██░░██──██░░██──────██░░░░██░░░░██────────██░░██──────██░░██──────────██░░██────██░░██──██░░██────────────██░░██─
+─██░░██──────────██░░██────██░░██──██░░██────████░░██──██░░████────████░░████────██░░██──────────██░░██────██░░██████░░██────██████████░░██─
+─██░░██──────────██░░██────██░░██──██░░██────██░░░░██──██░░░░██────██░░░░░░██────██░░██──────────██░░██────██░░░░░░░░░░██────██░░░░░░░░░░██─
+─██████──────────██████────██████──██████────████████──████████────██████████────██████──────────██████────██████████████────██████████████─
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+                                    █▀ ▀█▀ █▀█ █▀▀ █▄░█ █▀▀ ▀█▀ █░█   ▄▀█ █▄░█ █▀▄   █░█ █▀█ █▄░█ █▀█ █▀█
+                                    ▄█ ░█░ █▀▄ ██▄ █░▀█ █▄█ ░█░ █▀█   █▀█ █░▀█ █▄▀   █▀█ █▄█ █░▀█ █▄█ █▀▄
+
 // Maximus is a contract for trustlessly pooling a single max length hex stake.
 // Anyone may choose to mint 1 MAXI per HEX deposited into the Maximus Contract Address during the minting phase.
 // Anyone may choose to pay for the gas to start and end the stake on behalf of the Maximus Contract.
 // Anyone may choose to pay for the gas to mint Hedron the stake earns on behalf of the Maximus Contract.
-// MAXI is a standard ERC20 token only minted upon HEX deposit and burnt open HEX redemption with no pre-mine or contract fee.
+// MAXI is a standard ERC20 token, only minted upon HEX deposit and burnt upon HEX redemption with no pre-mine or contract fee.
 // MAXI holders may choose to burn MAXI to redeem HEX principal and yield (Including HEDRON) pro-rata from the Maximus Contract Address during the redemption phase.
 //
 // |--- Minting Phase---|---------- 5555 Day Stake Phase ------------...-----|------ Redemption Phase ---------->
+
+
+THE MAXIMUS CONTRACT, SUPPORTING WEBSITES, AND ALL OTHER INTERFACES (THE SOFTWARE) IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES WITH REGARD TO THIS SOFTWARE INCLUDING ALL IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY SPECIAL, DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES WHATSOEVER RESULTING FROM
+LOSS OF USE, DATA OR PROFITS, WHETHER IN AN ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+
+BY INTERACTING WITH THE SOFTWARE YOU ARE ASSERTING THAT YOU BEAR ALL THE RISKS ASSOCIATED WITH DOING SO. AN INFINITE NUMBER OF UNPREDICTABLE THINGS MAY GO WRONG WHICH COULD POTENTIALLY RESULT IN CRITICAL FAILURE AND FINANCIAL LOSS. BY INTERACTING WITH THE SOFTWARE YOU ARE ASSERTING THAT YOU AGREE THERE IS NO RECOURSE AVAILABLE AND YOU WILL NOT SEEK IT.
+
+INTERACTING WITH THE SOFTWARE SHALL NOT BE CONSIDERED AN INVESTMENT OR A COMMON ENTERPRISE. INSTEAD, INTERACTING WITH THE SOFTWARE IS EQUIVALENT TO CARPOOLING WITH FRIENDS TO SAVE ON GAS AND EXPERIENCE THE BENEFITS OF THE H.O.V. LANE. 
+
+YOU SHALL HAVE NO EXPECTATION OF PROFIT OR ANY TYPE OF GAIN FROM THE WORK OF OTHER PEOPLE.
+
+*/
 
 
 contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
@@ -69,7 +99,7 @@ contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
 	}
     address MAXI_ADDRESS =address(this);
     address constant HEX_ADDRESS = 0x2b591e99afE9f32eAA6214f7B7629768c40Eeb39; // "2b, 5 9 1e? that is the question..."
-    address constant HEDRON_ADDRESS=0x3819f64f282bf135d62168C1e513280dAF905e06; // PULSECHAIN TESTNET HEDRON ADDRESS
+    address constant HEDRON_ADDRESS=0x3819f64f282bf135d62168C1e513280dAF905e06; 
 
     IERC20 hex_contract = IERC20(HEX_ADDRESS);
     IERC20 hedron_contract=IERC20(HEDRON_ADDRESS);
@@ -136,7 +166,7 @@ contract Maximus is ERC20, ERC20Burnable, ReentrancyGuard {
         _mint(msg.sender, amount);
     }
      /**
-     * @dev Ensures that MAXI Minting Phase is ongoing and that the user has allowed the Maximus Contract address to spend the amount of HEX the user intends to pledge to Maximus DAO. Then sends the designated HEX from the user to the Maximus Contract address and mints 1 MAXI per HEX pledged.
+     * @dev Ensures that MAXI Minting Phase is ongoing and that the user has allowed the Maximus Contract address to spend the amount of HEX the user intends to pledge to Maximus. Then sends the designated HEX from the user to the Maximus Contract address and mints 1 MAXI per HEX pledged.
      * @param amount of HEX user chose to pledge, measured in hearts
      */
     function pledgeHEX(uint256 amount) nonReentrant external {
